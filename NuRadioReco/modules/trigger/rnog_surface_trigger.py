@@ -85,7 +85,9 @@ def schottky_diode(trace, threshold, temperature=250*units.kelvin, Vbias=2*units
 
 class triggerSimulator:
     """
-    Calculates the RNO_G surface trigger with a bandpass filter, a -10db attenuator and a schottky_diode.
+    Calculates the RNO_G surface trigger with a bandpass filter and a schottky_diode. The 10 dB attenuator is
+    present in the hardware trigger path but is only important for the diode range. Since this was accounted for
+    in the schottky diode model it is not necessary to included it here.
     """
 
     def __init__(self):
@@ -154,9 +156,6 @@ class triggerSimulator:
             logger.debug(f'trace before trigger {np.abs(np.max(channel.get_trace()))}')
             trace_filtered = channel.base_trace.get_filtered_trace([80 * units.MHz, 180 * units.MHz], 'cheby1', order=3, rp=5)
             logger.debug(f'trace after bandpass {np.abs(np.max(trace_filtered))}')
-            # apply -10dB attenuator of signal chain
-            trace_filtered *= 10**(-10/20)
-            logger.debug(f'trace after attenuator {np.abs(np.max(trace_filtered))}')
             trace = trace_filtered
 
             if(isinstance(threshold, dict)):
