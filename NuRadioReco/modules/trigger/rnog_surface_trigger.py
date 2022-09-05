@@ -11,11 +11,11 @@ import logging
 
 logger = logging.getLogger('rnog_surface_trigger')
 
-def schottky_diode(trace, threshold, temperature=250*units.kelvin, Vbias=2*units.volt):
+def schottky_diode(trace, threshold, daq_temperature=250 * units.kelvin, Vbias=2 * units.volt):
     '''
     Returns the absolute maximum of the diode response depending on the maximum input signal.
 
-    Options for temperature are [300K, 273K, 250K], for the bias voltages [2, 1.5, 1, 0.5]V.
+    Options for daq_temperature are [300K, 273K, 250K], for the bias voltages [2, 1.5, 1, 0.5]V.
     The triggerpath reduces the voltage by -10dB, hence the threshold is small. The linear fit is obtained from
     measurements stored in rnog_surface_trigger_measurements.
 
@@ -25,7 +25,7 @@ def schottky_diode(trace, threshold, temperature=250*units.kelvin, Vbias=2*units
         the signal trace
     threshold: float
         the threshold
-    temperature: float
+    daq_temperature: float
         temperature of the board with diode
     Vbias: float
         applied bias voltage to the diode board
@@ -35,8 +35,13 @@ def schottky_diode(trace, threshold, temperature=250*units.kelvin, Vbias=2*units
     trigger: list of booleans
         trigger evaluation for each entry of the trace
     '''
+    if daq_temperature not in [250, 273, 300]:
+        raise Exception(f'No model for daq_temperature = {daq_temperature} K found. Possible daq_temperature parameters are 250K, 273K, 300K')
 
-    if temperature == 300 *units.kelvin:  #measurements taken at 300K
+    if Vbias not in np.array([2, 1.5, 1, 0.5]) * units.volt:
+        raise Exception(f'No model for Vbias = {Vbias} V found. Possible Vbias parameters are  2V, 1.5V, 1V, 0.5V.')
+
+    if daq_temperature == 300 *units.kelvin:  #measurements taken at 300K
         if Vbias == 2*units.volt:
             a = 38.10032
             b = -9.19654194e-08
@@ -50,7 +55,7 @@ def schottky_diode(trace, threshold, temperature=250*units.kelvin, Vbias=2*units
             a = 16.0005295
             b = -5.83972425e-04
 
-    if temperature == 273*units.kelvin: #measurements taken at 273K
+    if daq_temperature == 273*units.kelvin: #measurements taken at 273K
         if Vbias == 2*units.volt:
             a = 45.9684369
             b = -6.15792586e-06
@@ -64,7 +69,7 @@ def schottky_diode(trace, threshold, temperature=250*units.kelvin, Vbias=2*units
             a = 15.4192195
             b = -5.10530795e-04
 
-    if temperature == 250*units.kelvin: #measurements taken at 248K
+    if daq_temperature == 250*units.kelvin: #measurements taken at 248K
         if Vbias == 2*units.volt:
             a = 55.0380132
             b = -2.13447979e-05
@@ -77,6 +82,8 @@ def schottky_diode(trace, threshold, temperature=250*units.kelvin, Vbias=2*units
         if Vbias == 0.5*units.volt:
             a = 17.4574667
             b = -5.90216182e-04
+
+
 
     v_in = (trace)**2
     v_out = a * v_in + b
@@ -97,7 +104,7 @@ class triggerSimulator:
         return
 
     @register_run()
-    def run(self, evt, station, det, threshold, coinc_window=60*units.ns, number_coincidences=1, triggered_channels=[13, 16, 19], temperature=250*units.kelvin, Vbias=2*units.volt, trigger_name='rnog_surface_trigger'):
+    def run(self, evt, station, det, threshold, coinc_window=60*units.ns, number_coincidences=1, triggered_channels=[13, 16, 19], daq_temperature=250*units.kelvin, Vbias=2*units.volt, trigger_name='rnog_surface_trigger'):
         """
         Run the surface trigger module and write trigger status into station.
 
@@ -118,7 +125,7 @@ class triggerSimulator:
             channels ids that are triggered on, if None trigger will run on all channels
         coinc_window: float
             time window in which number_coincidences channels need to trigger
-        temperature: float
+        daq_temperature: float
             temperature of the board with diode in Kelvin
         Vbias: float
             applied bias voltage to the diode board in Volt
@@ -161,7 +168,7 @@ class triggerSimulator:
                 threshold_tmp = threshold[channel_id]
             else:
                 threshold_tmp = threshold
-            triggered_bins = schottky_diode(trace, threshold_tmp)
+            triggered_bins = schottky_diode(trace, threshold_tmp, daq_temperature, Vbias)
             triggered_bins_channels.append(triggered_bins)
             if True in triggered_bins:
                 channels_that_passed_trigger.append(channel.get_id())
@@ -169,15 +176,14 @@ class triggerSimulator:
         # check for coincidences with get_majority_logic(tts, number_of_coincidences, time_coincidence, dt)
         # returns:
         # triggered: bool; returns True if majority logic is fulfilled --> has_triggered
-        # triggered_bins: array of ints; the bins that fulfilled the 
-trigger --> triggered_bins
+        # triggered_bins: array of ints; the bins that fulfilled the trigger --> triggered_bins
         # triggered_times = triggered_bins * dt: array of floats;
         # the trigger times relative to the trace --> triggered_times
 
         has_triggered, triggered_bins, triggered_times = get_majority_logic(triggered_bins_channels,
                                                                             number_coincidences, coinc_window, dt)
 
-        trigger = RNOGSurfaceTrigger(trigger_name, threshold, number_coincidences, coinc_window, triggered_channels)
+        trigger = RNOGSurfaceTrigger(trigger_name, threshold, number_coincidences, coinc_window, triggered_channels, daq_temperature, Vbias)
         trigger.set_triggered_channels(channels_that_passed_trigger)
 
         if has_triggered:

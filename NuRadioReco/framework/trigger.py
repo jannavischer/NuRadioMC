@@ -347,7 +347,7 @@ class EnvelopeTrigger(Trigger):
 class RNOGSurfaceTrigger(Trigger):
     from NuRadioReco.utilities import units
     def __init__(self, name, threshold, number_of_coincidences=1,
-                 channel_coincidence_window=60*units.ns, channels=[13, 16, 19], temperature=250*units.kelvin, Vbias=2*units.volt):
+                 channel_coincidence_window=60*units.ns, channels=[13, 16, 19], daq_temperature=250*units.kelvin, Vbias=2*units.volt):
         """
         initialize trigger class
 
@@ -365,7 +365,7 @@ class RNOGSurfaceTrigger(Trigger):
         channels: array of ints or None
             the channels that are involved in the trigger
             default: None, i.e. all channels
-        temperature: float
+        daq_temperature: float
             temperature of the trigger board
         Vbias: float
             bias voltage on the trigger board
@@ -374,5 +374,5 @@ class RNOGSurfaceTrigger(Trigger):
         self._threshold = threshold
         self._number_of_coincidences = number_of_coincidences
         self._coinc_window = channel_coincidence_window
-        self._temperature = temperature
+        self._daq_temperature = daq_temperature
         self._Vbias = Vbias
