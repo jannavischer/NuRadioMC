@@ -2,7 +2,6 @@ from NuRadioReco.modules.base.module import register_run
 from NuRadioReco.modules.trigger.highLowThreshold import get_majority_logic
 from NuRadioReco.framework.trigger import RNOGSurfaceTrigger
 from NuRadioReco.utilities import units
-import NuRadioReco.framework.base_trace as base_trace
 import NuRadioReco.utilities.fft
 import numpy as np
 import scipy.signal
@@ -154,7 +153,7 @@ class triggerSimulator:
 
             frequencies = channel.get_frequencies()
             logger.debug(f'trace before trigger {np.abs(np.max(channel.get_trace()))}')
-            trace_filtered = channel.base_trace.get_filtered_trace([80 * units.MHz, 180 * units.MHz], 'cheby1', order=3, rp=5)
+            trace_filtered = channel.get_filtered_trace([80 * units.MHz, 180 * units.MHz], 'cheby1', order=3, rp=5)
             logger.debug(f'trace after bandpass {np.abs(np.max(trace_filtered))}')
             trace = trace_filtered
 
@@ -170,7 +169,8 @@ class triggerSimulator:
         # check for coincidences with get_majority_logic(tts, number_of_coincidences, time_coincidence, dt)
         # returns:
         # triggered: bool; returns True if majority logic is fulfilled --> has_triggered
-        # triggered_bins: array of ints; the bins that fulfilled the trigger --> triggered_bins
+        # triggered_bins: array of ints; the bins that fulfilled the 
+trigger --> triggered_bins
         # triggered_times = triggered_bins * dt: array of floats;
         # the trigger times relative to the trace --> triggered_times
 
