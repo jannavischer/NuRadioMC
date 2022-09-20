@@ -18,6 +18,8 @@ from NuRadioMC.SignalProp.propagation import solution_types, solution_types_reve
 
 import logging
 logging.basicConfig()
+logger = logging.getLogger('analytic-raytracing')
+logger.setLevel(logging.INFO)
 
 # check if CPP implementation is available
 cpp_available = False
@@ -25,9 +27,9 @@ cpp_available = False
 try:
     from NuRadioMC.SignalProp.CPPAnalyticRayTracing import wrapper
     cpp_available = True
-    print("using CPP version of ray tracer")
+    logger.info("using CPP version of ray tracer")
 except:
-    print("trying to compile the CPP extension on-the-fly")
+    logger.info("trying to compile the CPP extension on-the-fly")
     try:
         import subprocess
         import os
@@ -35,10 +37,10 @@ except:
                                  "install.sh"))
         from NuRadioMC.SignalProp.CPPAnalyticRayTracing import wrapper
         cpp_available = True
-        print("compilation was successful, using CPP version of ray tracer")
+        logger.info("compilation was successful, using CPP version of ray tracer")
     except:
-        print("compilation was not successful, using python version of ray tracer")
-        print("check NuRadioMC/NuRadioMC/SignalProp/CPPAnalyticRayTracing for manual compilation")
+        logger.warning("compilation was not successful, using python version of ray tracer")
+        logger.warning("check NuRadioMC/NuRadioMC/SignalProp/CPPAnalyticRayTracing for manual compilation")
         cpp_available = False
 
 """
